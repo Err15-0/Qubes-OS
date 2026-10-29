@@ -1,5 +1,5 @@
 # 在继续使用原主力系统的情况下，在物理机使用Qubes
-## 一种解决方案 —— P2V(Physical to Virtual)完整流程
+## 一种解决方案 —— 记录我的P2V(Physical to Virtual)完整流程
 *示例：将主力物理 Debian / Windows 系统迁移到 Qubes OS HVM* 
 
 *需要材料（稍后补充）：两块足够大的硬盘，一个足够大的U盘作为 Qubes 启动盘，原始电脑。
@@ -115,6 +115,7 @@ Partition table entries are not in disk order.
 
 #### Debian
 Debian 比 Windows 好迁移多了！
+### 我已经完整丝滑成功了!!!
 待会写
 
 #### Windows
@@ -190,6 +191,57 @@ C: --> 右键 --> Shrink Volume
 
 
 #### （3）在外置 Qubes 上启动两个 VM
+
+#### Windows
+目前还没有成功,直接从迁移后的硬盘启动遇到了这样的情况
+TianoCore --> UEFI QEMU HARDDISK --> starting... --> 卡住
+
+有人遇到了一样的情况：https://forum.qubes-os.org/t/windows-11-installer-hangs-on-uefi-splash-screen/40933
+
+由此怀疑旧 BCD 仍然引用原物理磁盘/分区标识，于是计划用 Windows ISO 进入 WinRE.
+重新启动，进入 TianoCore Boot Manager，选 UEFI QEMU DVD/CDROM。
+
+但是出现了第二个问题：
+
+Windows ISO --> Qubes CD-ROM attach 成功 --> TianoCore 能看到 UEFI QEMU DVD/CDROM --> 选择 DVD --> 黑屏
+
+已经验证：
+```
+source write-protected, mounted read-only # ISO 可以 mount                 
+ls /mnt/efi/boot/ # efi/boot/bootx64.efi 存在      
+ls -lh /mnt/sources/boot.wim # sources/boot.wim 存在          
+Qubes xvdd CD-ROM attach       
+TianoCore 能识别 DVD
+```        
+
+所以ISO 文件没明显损坏，Qubes 也确实把它挂成 CD-ROM 了。
+
+中间还遇到了
+```
+Err15@dom0:~$ qvm-start windows-old --cdrom=personal:/home/user/Downloads/Windows11_Client_x64_en-us_26300_9457.iso
+Error: Block device personal:loop4:* not available
+
+Err15@dom0:~$ qvm-shutdown personal
+Err15@dom0:~$ qvm-start personal
+Err15@dom0:~$ qvm-start windows-old --cdrom=personal:/home/user/Downloads/Windows11_Client_x64_en-us_26300_9457.iso
+Error: "'block device personal:loop0:* already assigned to windows-old'"
+```
+
+这是因为反复 --cdrom 制造了loop4 loop5 loop6 loop7 loop8 一堆 stale assignments
+```
+Err15@dom0:~$ qvm-device block list --assignments windows-old
+BACKEND:DEVID   DESCRIPTION  USED BY
+personal:loop0  :0           *windows-old (required: devtype=cdrom, read-only=True), *windows-old (auto-attach: devtype=cdrom,ro=true)
+personal:loop0  any device   *windows-old (required: devtype=cdrom, read-only=True)
+......
+```
+清理掉了
+```
+qvm-device block unassign windows-old personal:loop0:*
+qvm-device block unassign windows-old personal:loop4:*
+qvm-device block unassign windows-old personal:loop5:*
+......
+```
 
 
 ### 4. Qubes Backup
