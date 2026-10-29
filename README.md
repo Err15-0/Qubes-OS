@@ -1,4 +1,5 @@
-# 如何在继续使用原主力系统的情况下，在物理机使用Qubes；一种解决方案 —— P2V(Physical to Virtual)
+# 在继续使用原主力系统的情况下，在物理机使用Qubes
+## 一种解决方案 —— P2V(Physical to Virtual)完整流程
 *示例：将主力物理 Debian / Windows 系统迁移到 Qubes OS HVM* 
 
 *需要材料（稍后补充）：两块足够大的硬盘，一个足够大的U盘作为 Qubes 启动盘，原始电脑。
@@ -50,14 +51,55 @@ SSD1_Qubes
 ```
 
 
+(1) 了解基本信息（此时我在debian）
+```
+┌─(~)─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────(Err15@debian:pts/1)─┐ 
+└─(20:39:24)──>lsblk -o NAME,SIZE,FSTYPE,FSUSED,FSAVAIL,LABEL,PARTLABEL,MOUNTPOINTS                                                          ──(Tue,Oct27)─┘
+NAME          SIZE FSTYPE FSUSED FSAVAIL LABEL            PARTLABEL                    MOUNTPOINTS 
+nvme0n1       1.9T                                                                      
+├─nvme0n1p1   260M vfat    90.9M  165.1M SYSTEM           EFI system partition         /boot/efi 
+├─nvme0n1p2    16M                                        Microsoft reserved partition  
+├─nvme0n1p3 771.5G ntfs                  Windows          Basic data partition          
+├─nvme0n1p4 842.2G ntfs                  Data                                            
+├─nvme0n1p5   806M ntfs                  Windows RE tools Basic data partition          
+├─nvme0n1p6  46.6G ext4    32.7G   10.5G                  Root/                         / 
+├─nvme0n1p7   7.5G swap                                   Swap                         [SWAP] 
+└─nvme0n1p8 229.2G ext4   152.4G   60.7G                  Home                         /home
 
-#### Windows
-(https://doc.qubes-os.org/en/latest/user/templates/windows/qubes-windows.html)
-
+┌─(~)─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────(Err15@debian:pts/1)─┐ 
+└─(20:39:24)──> sudo fdisk -l /dev/nvme0n1                                                                                                   ──(Tue,Oct27)─┘
+[sudo] password for root:  
+Disk /dev/nvme0n1: 1.86 TiB, 2048408248320 bytes, 4000797360 sectors
+Disk model: <disk model>                    
+Units: sectors of 1 * 512 = 512 bytes 
+Sector size (logical/physical): 512 bytes / 512 bytes 
+I/O size (minimum/optimal): 512 bytes / 512 bytes 
+Disklabel type: gpt 
+Disk identifier: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX 
+Device         Start      End        Sectors    Size   Type
+/dev/nvme0n1p1       2048     534527     532480   260M EFI System 
+/dev/nvme0n1p2     534528     567295      32768    16M Microsoft reserved 
+/dev/nvme0n1p3     567296 1618487295 1617920000 771.5G Microsoft basic data 
+/dev/nvme0n1p4 1638967296 3405213695 1766246400 842.2G Microsoft basic data 
+/dev/nvme0n1p5 3999133696 4000784383    1650688   806M Windows recovery environment 
+/dev/nvme0n1p6 3405213696 3502870527   97656832  46.6G Linux swap 
+/dev/nvme0n1p7 3983509504 3999133695   15624192   7.5G Linux swap 
+/dev/nvme0n1p8 3502870528 3983509503  480638976 229.2G Linux filesystem
+Partition table entries are not in disk order. 
+┌─(~)─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────(Err15@debian:pts/1)─┐ 
+└─(20:39:24)──> sudo du -xsh /                                                                                                               ──(Tue,Oct27)─┘
+33G     /
+┌─(~)─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────(Err15@debian:pts/1)─┐
+└─(20:39:24)──> sudo du -sh /home                                                                                                            ──(Tue,Oct27)─┘
+153G    /home
+```
+施工中......
 
 #### Debian
 Debian 比 Windows 好迁移多了！
-施工中......
+
+#### Windows
+(https://doc.qubes-os.org/en/latest/user/templates/windows/qubes-windows.html)
 
 #### 在外置 Qubes 上启动两个 VM
 
