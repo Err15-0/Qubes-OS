@@ -37,6 +37,22 @@ USB stick
 ### 1. 在SSD1安装Qubes,在物理机启动
 测试硬件
 
+现在我们有
+```
+内置 2TB NVMe
+├── Windows
+├── Debian
+└── 其他/恢复分区
+
+1TB SSD1
+└── 当前可启动 Qubes 4.3.2
+
+1TB SSD2
+└── 其他备份
+
+USB
+└── Qubes 安装盘
+```
 
 ### 2. 备份两个系统到SSD2
 将会获得两个独立的虚拟磁盘：windows.raw，debian.raw
@@ -51,10 +67,10 @@ SSD1_Qubes
 ```
 
 
-(1) 了解基本信息（此时我在debian）
+#### (1) 了解基本信息（此时我在debian）
 ```
-┌─(~)─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────(Err15@debian:pts/1)─┐ 
-└─(20:39:24)──>lsblk -o NAME,SIZE,FSTYPE,FSUSED,FSAVAIL,LABEL,PARTLABEL,MOUNTPOINTS                                                          ──(Tue,Oct27)─┘
+┌─(~)─────────────────────────────────────────────────────────────────────────────────────────────(Err15@debian:pts/1)─┐ 
+└─(20:39:24)──>lsblk -o NAME,SIZE,FSTYPE,FSUSED,FSAVAIL,LABEL,PARTLABEL,MOUNTPOINTS                      ──(Tue,Oct27)─┘
 NAME          SIZE FSTYPE FSUSED FSAVAIL LABEL            PARTLABEL                    MOUNTPOINTS 
 nvme0n1       1.9T                                                                      
 ├─nvme0n1p1   260M vfat    90.9M  165.1M SYSTEM           EFI system partition         /boot/efi 
@@ -66,8 +82,8 @@ nvme0n1       1.9T                            �
 ├─nvme0n1p7   7.5G swap                                   Swap                         [SWAP] 
 └─nvme0n1p8 229.2G ext4   152.4G   60.7G                  Home                         /home
 
-┌─(~)─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────(Err15@debian:pts/1)─┐ 
-└─(20:39:24)──> sudo fdisk -l /dev/nvme0n1                                                                                                   ──(Tue,Oct27)─┘
+┌─(~)─────────────────────────────────────────────────────────────────────────────────────────────(Err15@debian:pts/1)─┐ 
+└─(20:39:24)──> sudo fdisk -l /dev/nvme0n1                                                               ──(Tue,Oct27)─┘
 [sudo] password for root:  
 Disk /dev/nvme0n1: 1.86 TiB, 2048408248320 bytes, 4000797360 sectors
 Disk model: <disk model>                    
@@ -86,22 +102,94 @@ Device         Start      End        Sectors    Size   Type
 /dev/nvme0n1p7 3983509504 3999133695   15624192   7.5G Linux swap 
 /dev/nvme0n1p8 3502870528 3983509503  480638976 229.2G Linux filesystem
 Partition table entries are not in disk order. 
-┌─(~)─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────(Err15@debian:pts/1)─┐ 
-└─(20:39:24)──> sudo du -xsh /                                                                                                               ──(Tue,Oct27)─┘
+┌─(~)──────────────────────────────────────────────────────────────────────────────────────────────(Err15@debian:pts/1)─┐ 
+└─(20:39:24)──> sudo du -xsh /                                                                            ──(Tue,Oct27)─┘
 33G     /
-┌─(~)─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────(Err15@debian:pts/1)─┐
-└─(20:39:24)──> sudo du -sh /home                                                                                                            ──(Tue,Oct27)─┘
+┌─(~)──────────────────────────────────────────────────────────────────────────────────────────────(Err15@debian:pts/1)─┐
+└─(20:39:24)──> sudo du -sh /home                                                                         ──(Tue,Oct27)─┘
 153G    /home
 ```
 施工中......
 
+#### (2) 开始备份
+
 #### Debian
 Debian 比 Windows 好迁移多了！
+待会写
 
 #### Windows
-(https://doc.qubes-os.org/en/latest/user/templates/windows/qubes-windows.html)
+https://doc.qubes-os.org/en/latest/user/templates/windows/qubes-windows.html
 
-#### 在外置 Qubes 上启动两个 VM
+打开管理员Powershell, 确保Bitlocker关闭
+```
+
+PS C:\windows\system32> manage-bde -status
+Disk volumes that can be protected with BitLocker Drive Encryption:
+Volume C: [Windows]
+[OS Volume]
+
+Size:                     771.48 GB
+BitLocker Version:        None
+Conversion Status:        Fully Decrypted
+Percentage Encrypted:     0.0%
+Encryption Method:        None
+Protection Status:        Protection Off
+Lock Status:              Unlocked
+Identification Field:     None
+Key Protectors:           None Found
+
+Volume D: [Data]
+[Data Volume]
+
+Size:                     842.21 GB
+BitLocker Version:        None
+Conversion Status:        Fully Decrypted
+Percentage Encrypted:     0.0%
+Encryption Method:        None
+Protection Status:        Protection Off
+Lock Status:              Unlocked
+Identification Field:     None
+Automatic Unlock:         Disabled
+Key Protectors:           None Found
+```
+确保都是Fully Decrypted.
+
+(Optional)缩小空间：
+- 管理员Powershell检查
+``` 
+  Get-ChildItem <你的盘符>:\ -Force |
+ForEach-Object {
+    $p = $_.FullName
+    $size = if ($_.PSIsContainer) {
+        (Get-ChildItem $p -Force -File -Recurse -ErrorAction SilentlyContinue |
+         Measure-Object Length -Sum).Sum
+    } else {
+        $_.Length
+    }
+    [PSCustomObject]@{
+        Name = $_.Name
+        SizeGB = [math]::Round($size / 1GB, 2)
+    }
+} | Sort-Object SizeGB -Descending
+```
+
+- 关闭休眠/Fast Startup，并删除 hiberfil.sys
+```
+powercfg /h off
+```
+- 运行 Windows 自带清理
+```
+cleanmgr
+```
+- 缩C盘
+Win + R，输入：
+```
+diskmgmt.msc
+```
+C: --> 右键 --> Shrink Volume
+
+
+#### （3）在外置 Qubes 上启动两个 VM
 
 
 ### 4. Qubes Backup
