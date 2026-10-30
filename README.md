@@ -2,6 +2,15 @@
 ## 一种解决方案 —— 记录我的P2V(Physical to Virtual)完整流程
 *示例：将主力物理 Debian / Windows 系统迁移到 Qubes OS HVM* 
 
+Status: Work in progress
+
+- [x] External Qubes installation and hardware testing
+- [x] Debian physical-to-virtual migration
+- [x] Debian HVM verification
+- [x] Qubes backup
+- [ ] Windows P2V migration
+- [ ] Final migration to internal SSD
+
 *需要材料（稍后补充）：两块足够大的硬盘，一个足够大的U盘作为 Qubes 启动盘，原始电脑。
 
 ### 思路：
